@@ -9,6 +9,7 @@
     },
     "backend": {
       "root": "backend/",
+      "entrypoint": "config.wsgi:application",
       "buildCommand": "DATABASE_URL=\"${DATABASE_URL_UNPOOLED:-$DATABASE_URL}\" python manage.py migrate --noinput && python manage.py collectstatic --noinput"
     }
   },
