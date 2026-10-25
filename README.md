@@ -82,13 +82,14 @@ Copy `frontend/.env.example` to `frontend/.env` to change `VITE_API_URL`. Vite s
 
 The repository root `vercel.json` configures one Vercel project with two services: Vite serves the frontend, and Django serves `/api/` and `/admin/`. The backend uses `config.wsgi:application` as its Python entrypoint. Import the repository once, set the Framework Preset to **Services**, and keep Root Directory at the repository root (`./`). Do not choose `frontend/` as the project root or import the frontend as a separate project. Vercel Services may need to be enabled for the account/project.
 
-This deployment uses **temporary SQLite for demos**. It needs no PostgreSQL account or `DATABASE_URL`. The backend build generates a deployment-specific Django signing key if `SECRET_KEY` is not configured. On each backend function cold start, it creates/migrates a SQLite database under `/tmp` and seeds fictional demo records and demo accounts when the database is empty.
+Vercel requires a **shared PostgreSQL database** for records to remain visible across requests, devices, and function instances. Add a PostgreSQL provider through Vercel Marketplace (for example, Neon or Supabase) and make sure its `DATABASE_URL` environment variable is enabled for Production, Preview, and Development. The backend build runs migrations and seeds fictional demo data. The build generates a deployment-specific Django signing key when `SECRET_KEY` is not configured; you can set a private `SECRET_KEY` in Vercel to keep signed login tokens valid across deployments.
 
-Vercel function files are temporary and isolated by instance. Records can disappear after a cold start or deployment, and different instances may show different data. This is not suitable for real patient information or operational hospital use. For durable records, use a persistent database service.
+Do not use SQLite on Vercel: function filesystems are temporary and isolated, so writes can disappear or be invisible to another request. This app will now fail with a clear database configuration message if Vercel has no PostgreSQL `DATABASE_URL`, instead of silently creating an isolated database.
 
 1. Create one Vercel project from this GitHub repository, with Framework Preset **Services** and Root Directory `./`.
-2. Deploy without adding PostgreSQL variables. Optionally set a private `SECRET_KEY` in **Settings → Environment Variables** if you want it to remain stable across deployments; otherwise a new one is generated for each deployment.
-3. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
+2. From the Vercel project, add a PostgreSQL provider under **Storage** and connect it to the project. Confirm `DATABASE_URL` is available to the Production deployment and redeploy. The build applies migrations and inserts fictional seed/demo data.
+3. Optionally set a private `SECRET_KEY` in **Settings → Environment Variables** to keep login tokens valid across deployments; otherwise the build generates one for each deployment.
+4. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
 
 The frontend uses same-domain relative `/api` requests, so no production API URL or cross-origin setup is needed. See [Vercel Services](https://vercel.com/docs/services), [Vercel's SQLite guidance](https://vercel.com/kb/guide/is-sqlite-supported-in-vercel), and [Vercel Python deployment](https://vercel.com/docs/functions/runtimes/python).
 ## Demo logins

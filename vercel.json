@@ -10,7 +10,7 @@
     "backend": {
       "root": "backend/",
       "entrypoint": "config.wsgi:application",
-      "buildCommand": "python scripts/prepare_vercel_build.py && python manage.py collectstatic --noinput"
+      "buildCommand": "python scripts/prepare_vercel_build.py && python manage.py migrate --noinput && python scripts/seed_if_empty.py && python manage.py collectstatic --noinput"
     }
   },
   "rewrites": [

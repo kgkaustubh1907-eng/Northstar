@@ -26,16 +26,9 @@ MIDDLEWARE = ["django.middleware.security.SecurityMiddleware", "corsheaders.midd
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates", "DIRS": [], "APP_DIRS": True, "OPTIONS": {"context_processors": ["django.template.context_processors.debug", "django.template.context_processors.request", "django.contrib.auth.context_processors.auth", "django.contrib.messages.context_processors.messages"]}}]
 WSGI_APPLICATION = "config.wsgi.application"
-if IS_VERCEL:
-    # Vercel function filesystems are ephemeral. This demo database is isolated
-    # to one warm function instance and is never suitable for durable patient data.
-    DATABASES = {"default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.getenv("HOSPITAL_SQLITE_PATH", "/tmp/hospital-demo.sqlite3"),
-        "OPTIONS": {"timeout": 20},
-    }}
-elif os.getenv("DATABASE_URL"):
-    database_url = urlparse(os.environ["DATABASE_URL"])
+database_connection_url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+if database_connection_url:
+    database_url = urlparse(database_connection_url)
     if database_url.scheme not in {"postgres", "postgresql", "postgresql+psycopg"}:
         raise ImproperlyConfigured("DATABASE_URL must be a PostgreSQL connection URL.")
     database_options = {key: values[-1] for key, values in parse_qs(database_url.query).items() if values}
@@ -52,6 +45,10 @@ elif os.getenv("DATABASE_URL"):
         "DISABLE_SERVER_SIDE_CURSORS": True,
         "OPTIONS": database_options,
     }}
+elif IS_VERCEL:
+    raise ImproperlyConfigured(
+        "Configure a shared PostgreSQL database for Vercel by adding its DATABASE_URL environment variable."
+    )
 elif os.getenv("DB_NAME"):
     DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "NAME": os.getenv("DB_NAME"), "USER": os.getenv("DB_USER", "postgres"), "PASSWORD": os.getenv("DB_PASSWORD", ""), "HOST": os.getenv("DB_HOST", "localhost"), "PORT": os.getenv("DB_PORT", "5432")}}
 else:
