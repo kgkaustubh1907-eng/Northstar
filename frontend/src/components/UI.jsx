@@ -1,0 +1,9 @@
+import React from'react';import{X,Search,LoaderCircle}from'lucide-react';
+export function PageHeader({eyebrow,title,description,action}){return <div className="page-head"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1>{description&&<p>{description}</p>}</div>{action}</div>}
+export function Loading({label='Loading records...'}){return <div className="state"><span className="spinner"/><span>{label}</span></div>}
+export function ErrorState({message,retry}){return <div className="state error-state"><strong>Unable to load this information</strong><span>{message||'Check your connection and try again.'}</span>{retry&&<button className="btn btn-secondary" onClick={retry}>Try again</button>}</div>}
+export function EmptyState({title='No records found',text='Try changing the search or filters.'}){return <div className="state"><div className="empty-icon"><Search size={20}/></div><strong>{title}</strong><span>{text}</span></div>}
+export function Modal({title,onClose,children,wide=false}){return <div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className={`modal ${wide?'modal-wide':''}`}><div className="modal-head"><div><div className="eyebrow">HOSPITAL RECORD</div><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18}/></button></div>{children}</div></div>}
+export function Field({label,children,hint}){return <div className="field"><label>{label}</label>{children}{hint&&<small className="muted">{hint}</small>}</div>}
+export function Status({value}){let cls=['Completed','Dispensed','Available'].includes(value)?'':(['Pending','In Progress'].includes(value)?'badge-warn':(['Cancelled','Unavailable'].includes(value)?'badge-red':'badge-gray'));return <span className={`badge ${cls}`}>{value||'—'}</span>}
+export function Toast({toast}){if(!toast)return null;return <div className={`toast ${toast.type==='error'?'toast-error':''}`}>{toast.message}</div>}
