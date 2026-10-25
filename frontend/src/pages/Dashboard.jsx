@@ -28,12 +28,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     load();
-    const timer = window.setInterval(() => load(false), 10000);
     const onFocus = () => load(false);
     window.addEventListener('focus', onFocus);
     const onVisibility = () => { if (document.visibilityState === 'visible') load(false); };
     document.addEventListener('visibilitychange', onVisibility);
-    return () => { window.clearInterval(timer); window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onVisibility); };
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onVisibility); };
   }, [load]);
 
   if (busy && !data) return <Loading label="Loading hospital dashboard..." />;

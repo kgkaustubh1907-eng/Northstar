@@ -12,4 +12,4 @@ router.register("prescriptions",views.PrescriptionViewSet)
 router.register("medical-stores",views.MedicalStoreViewSet)
 router.register("people",views.PersonViewSet)
 router.register("caretakers",views.CaretakerViewSet)
-urlpatterns=[path("",include(router.urls)),path("dashboard/",views.dashboard),path("query/",views.query),path("search/",views.global_search),path("auth/me/",views.current_user)]
+urlpatterns=[path("",include(router.urls)),path("dashboard/",views.dashboard),path("changes/",views.data_revision),path("query/",views.query),path("search/",views.global_search),path("auth/me/",views.current_user)]

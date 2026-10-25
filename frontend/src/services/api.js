@@ -1,5 +1,5 @@
 import axios from 'axios';
-const api=axios.create({baseURL:import.meta.env.VITE_API_URL||'http://localhost:8000/api',headers:{'Content-Type':'application/json'}});
+const api=axios.create({baseURL:import.meta.env.VITE_API_URL||(import.meta.env.DEV?'http://localhost:8000/api':'/api'),headers:{'Content-Type':'application/json'}});
 api.interceptors.request.use(c=>{const token=localStorage.getItem('access');if(token)c.headers.Authorization=`Token ${token}`;return c});
 const dataPath=/^\/(patients|employees|departments|diagnoses|tests|equipment|prescriptions|medical-stores|people|caretakers)(\/|$)/;
 api.interceptors.response.use(r=>{const method=(r.config.method||'get').toLowerCase();if(['post','put','patch','delete'].includes(method)&&dataPath.test(new URL(r.config.url,window.location.origin).pathname.replace('/api',''))){window.dispatchEvent(new CustomEvent('hospital:data-changed',{detail:{method,url:r.config.url}}))}return r},error=>{if(error.response?.status===401){localStorage.removeItem('access');localStorage.removeItem('refresh');if(location.pathname!=='/login')location.href='/login'}return Promise.reject(error)});
@@ -26,6 +26,7 @@ export const getPrescriptions=()=>list('/prescriptions/');
 export const createPrescription=data=>api.post('/prescriptions/',data).then(r=>r.data);
 export const searchHospital=query=>api.post('/query/',{query}).then(r=>r.data);
 export const getDashboard=()=>api.get('/dashboard/').then(r=>r.data);
+export const getDataRevision=()=>api.get('/changes/').then(r=>r.data.revision);
 export const getPeople=()=>list('/people/');
 export const createPerson=data=>api.post('/people/',data).then(r=>r.data);
 export const getCaretakers=()=>list('/caretakers/');

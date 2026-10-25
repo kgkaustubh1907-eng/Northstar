@@ -28,6 +28,7 @@ Foreign keys preserve related record integrity. Patient, employee, department, e
 - Diagnosis, test, prescription, surgical equipment, person and caretaker records
 - Dashboard counts and charts loaded from the API
 - Global search and a rule based query center backed by Django ORM queries
+- Shared-database change revisions; open clients poll for updates from other signed-in devices every five seconds
 - Server side search, filtering, ordering and pagination for patient records
 - Responsive layout, loading/empty/error states, validation and confirmation prompts
 - Fictional relational demo records and local demo accounts
@@ -65,7 +66,7 @@ python manage.py seed_data
 python manage.py runserver
 ```
 
-The API is available at `http://localhost:8000/api/`. When `DB_NAME` is unset, local development falls back to SQLite; set the PostgreSQL variables in `.env` to use PostgreSQL. Never use the development fallback or demo credentials for a production deployment.
+The API is available at `http://localhost:8000/api/`. Local development falls back to SQLite unless `DATABASE_URL` or the `DB_NAME` PostgreSQL settings are configured. Never use the development fallback or demo credentials for a production deployment.
 
 ### Frontend
 
@@ -76,6 +77,22 @@ npm run dev
 ```
 
 Copy `frontend/.env.example` to `frontend/.env` to change `VITE_API_URL`. Vite serves the app at `http://localhost:5173` by default.
+
+## Deploy the combined app to Vercel
+
+The repository root `vercel.json` configures one Vercel project with two services: Vite serves the frontend, Django serves `/api/` and `/admin/`. Import the repository once and keep the Vercel Root Directory at the repository root. Vercel Services is currently a Beta feature; enable it for the account/project if Vercel asks.
+
+1. In Vercel, create one project from this GitHub repository and use the repository root. Do not create separate projects rooted at `frontend/` and `backend/`.
+2. Add a PostgreSQL provider through Vercel Marketplace. Neon is a straightforward option and supplies pooled `DATABASE_URL` plus direct `DATABASE_URL_UNPOOLED` connection strings.
+3. Add `SECRET_KEY` as a private Vercel environment variable. Set `DEBUG=False`. The app's backend build runs database migrations using `DATABASE_URL_UNPOOLED`, then collects Django admin static files.
+4. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
+5. Deploy. The frontend uses same-domain relative `/api` requests, so no production API URL or cross-origin setup is needed.
+
+All devices must use the same Vercel deployment and the same hosted `DATABASE_URL`. Successful ORM writes increment a shared database revision; signed-in open screens check it every five seconds and refetch changed lists, profiles, dashboard values, and searches. This keeps independent users and devices in sync without a manual browser refresh. Keep the database and Vercel Function region close to one another to reduce query latency.
+
+Do not run `seed_data` against a production database: it creates fictional patient records and well-known demo passwords. To bootstrap production access, connect a trusted local Django environment to the production database using its direct/unpooled URL, run `python manage.py createsuperuser`, then use `/admin/` to add staff accounts and assign each a `UserProfile` role. Use only fictitious/demo data until the deployment has been reviewed and secured for the hospital's actual patient-data requirements.
+
+Vercel currently documents Services as Beta. See [Vercel Services](https://vercel.com/docs/services), [Postgres on Vercel](https://vercel.com/docs/postgres), and [Vercel Python deployment](https://vercel.com/docs/functions/runtimes/python).
 
 ## Demo logins
 
@@ -102,6 +119,7 @@ The backend returns DRF opaque auth tokens from `POST /api/auth/token/`; send th
 - Surgical equipment CRUD: `/api/equipment/`
 - People and caretaker links: `/api/people/`, `/api/caretakers/`
 - Dashboard: `GET /api/dashboard/`
+- Shared data revision (for cross-device refresh): `GET /api/changes/`
 - Global search: `GET /api/search/?q=Ananya`
 - Query engine: `POST /api/query/` with `{"query":"Which doctors work in Cardiology?"}`
 

@@ -132,3 +132,9 @@ class UserProfile(models.Model):
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.RECEPTIONIST)
     employee = models.OneToOneField(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name="user_profile")
     def __str__(self): return f"{self.user.username} — {self.role}"
+
+class DataRevision(models.Model):
+    """Monotonic change marker polled by open clients for cross-device updates."""
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    revision = models.PositiveBigIntegerField(default=0)
+    updated_at = models.DateTimeField(default=timezone.now)

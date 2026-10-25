@@ -144,6 +144,12 @@ def current_user(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+def data_revision(request):
+    revision = DataRevision.objects.filter(pk=1).values_list("revision", flat=True).first()
+    return Response({"revision": revision or 0})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def dashboard(request):
     today=timezone.localdate(); start=today-timedelta(days=6)
     patient_series=[]
