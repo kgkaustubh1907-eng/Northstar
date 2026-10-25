@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
+from django.conf import settings
+from django.core import signing
 from .models import *
 from .serializers import *
 from .permissions import HospitalPermission, role_of
@@ -18,8 +20,15 @@ from .services.query_service import run_query
 def login(request):
     user=authenticate(request,username=request.data.get("username", ""),password=request.data.get("password", ""))
     if not user or not user.is_active: return Response({"detail":"Invalid username or password."},status=status.HTTP_401_UNAUTHORIZED)
-    token,_=Token.objects.get_or_create(user=user)
-    return Response({"access":token.key,"refresh":token.key})
+    if settings.IS_VERCEL:
+        token = signing.dumps(
+            {"username": user.get_username()},
+            salt="northstar.vercel-demo-token",
+        )
+    else:
+        token,_=Token.objects.get_or_create(user=user)
+        token = token.key
+    return Response({"access":token,"refresh":token})
 
 class HospitalViewSet(viewsets.ModelViewSet):
     permission_classes = [HospitalPermission]

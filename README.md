@@ -80,24 +80,17 @@ Copy `frontend/.env.example` to `frontend/.env` to change `VITE_API_URL`. Vite s
 
 ## Deploy the combined app to Vercel
 
-The repository root `vercel.json` configures one Vercel project with two services: Vite serves the frontend, and Django serves `/api/` and `/admin/`. The backend uses `config.wsgi:application` as its Python entrypoint. Import the repository once and keep the Vercel Root Directory at the repository root (`./`). Do not choose `frontend/` as the project root or import the frontend as a separate project. Vercel Services is currently a Beta feature; enable it for the account/project if Vercel asks.
+The repository root `vercel.json` configures one Vercel project with two services: Vite serves the frontend, and Django serves `/api/` and `/admin/`. The backend uses `config.wsgi:application` as its Python entrypoint. Import the repository once, set the Framework Preset to **Services**, and keep Root Directory at the repository root (`./`). Do not choose `frontend/` as the project root or import the frontend as a separate project. Vercel Services may need to be enabled for the account/project.
 
-**Configure the production environment before the first deployment.** Django intentionally stops the build if `SECRET_KEY` or the shared PostgreSQL database is missing.
+This deployment uses **temporary SQLite for demos**. It needs no PostgreSQL account or `DATABASE_URL`. The backend build generates a deployment-specific Django signing key if `SECRET_KEY` is not configured. On each backend function cold start, it creates/migrates a SQLite database under `/tmp` and seeds fictional demo records and demo accounts when the database is empty.
 
-1. In Vercel, create one project from this GitHub repository, set the Framework Preset to **Services**, and keep Root Directory at `./`.
-2. Add a PostgreSQL provider through Vercel Marketplace. Neon supplies a pooled `DATABASE_URL` and a direct `DATABASE_URL_UNPOOLED` connection string. Make sure both variables are available to the backend build.
-3. In the Vercel project's **Settings → Environment Variables**, add `SECRET_KEY` with a private, randomly generated value; add `DEBUG` with the value `False`; and add the database variables from the provider. Select **Production** for each variable (and **Preview** too if deploying previews against a database).
-4. Save the variables, then create a new deployment. The backend build runs migrations using `DATABASE_URL_UNPOOLED` when available, then collects Django admin static files. A failed deployment created before the variables were added must be redeployed to pick up the new values.
-5. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
+Vercel function files are temporary and isolated by instance. Records can disappear after a cold start or deployment, and different instances may show different data. This is not suitable for real patient information or operational hospital use. For durable records, use a persistent database service.
 
-The frontend uses same-domain relative `/api` requests, so no production API URL or cross-origin setup is needed. All devices must use this same Vercel deployment and hosted `DATABASE_URL` to share records.
+1. Create one Vercel project from this GitHub repository, with Framework Preset **Services** and Root Directory `./`.
+2. Deploy without adding PostgreSQL variables. Optionally set a private `SECRET_KEY` in **Settings → Environment Variables** if you want it to remain stable across deployments; otherwise a new one is generated for each deployment.
+3. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
 
-All devices must use the same Vercel deployment and the same hosted `DATABASE_URL`. Successful ORM writes increment a shared database revision; signed-in open screens check it every five seconds and refetch changed lists, profiles, dashboard values, and searches. This keeps independent users and devices in sync without a manual browser refresh. Keep the database and Vercel Function region close to one another to reduce query latency.
-
-Do not run `seed_data` against a production database: it creates fictional patient records and well-known demo passwords. To bootstrap production access, connect a trusted local Django environment to the production database using its direct/unpooled URL, run `python manage.py createsuperuser`, then use `/admin/` to add staff accounts and assign each a `UserProfile` role. Use only fictitious/demo data until the deployment has been reviewed and secured for the hospital's actual patient-data requirements.
-
-Vercel currently documents Services as Beta. See [Vercel Services](https://vercel.com/docs/services), [Postgres on Vercel](https://vercel.com/docs/postgres), and [Vercel Python deployment](https://vercel.com/docs/functions/runtimes/python).
-
+The frontend uses same-domain relative `/api` requests, so no production API URL or cross-origin setup is needed. See [Vercel Services](https://vercel.com/docs/services), [Vercel's SQLite guidance](https://vercel.com/kb/guide/is-sqlite-supported-in-vercel), and [Vercel Python deployment](https://vercel.com/docs/functions/runtimes/python).
 ## Demo logins
 
 `seed_data` creates fictional accounts (change these passwords before exposing the app beyond local development):

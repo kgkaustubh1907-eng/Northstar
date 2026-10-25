@@ -1,6 +1,8 @@
 __pycache__/
 *.py[cod]
 *.sqlite3
+backend/config/_deployment_secret.py
+backend/staticfiles/
 .env
 .venv/
 node_modules/
