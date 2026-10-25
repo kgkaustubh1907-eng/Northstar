@@ -80,13 +80,17 @@ Copy `frontend/.env.example` to `frontend/.env` to change `VITE_API_URL`. Vite s
 
 ## Deploy the combined app to Vercel
 
-The repository root `vercel.json` configures one Vercel project with two services: Vite serves the frontend, Django serves `/api/` and `/admin/`. Import the repository once and keep the Vercel Root Directory at the repository root. Vercel Services is currently a Beta feature; enable it for the account/project if Vercel asks.
+The repository root `vercel.json` configures one Vercel project with two services: Vite serves the frontend, and Django serves `/api/` and `/admin/`. The backend uses `config.wsgi:application` as its Python entrypoint. Import the repository once and keep the Vercel Root Directory at the repository root (`./`). Do not choose `frontend/` as the project root or import the frontend as a separate project. Vercel Services is currently a Beta feature; enable it for the account/project if Vercel asks.
 
-1. In Vercel, create one project from this GitHub repository and use the repository root. Do not create separate projects rooted at `frontend/` and `backend/`.
-2. Add a PostgreSQL provider through Vercel Marketplace. Neon is a straightforward option and supplies pooled `DATABASE_URL` plus direct `DATABASE_URL_UNPOOLED` connection strings.
-3. Add `SECRET_KEY` as a private Vercel environment variable. Set `DEBUG=False`. The app's backend build runs database migrations using `DATABASE_URL_UNPOOLED`, then collects Django admin static files.
-4. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
-5. Deploy. The frontend uses same-domain relative `/api` requests, so no production API URL or cross-origin setup is needed.
+**Configure the production environment before the first deployment.** Django intentionally stops the build if `SECRET_KEY` or the shared PostgreSQL database is missing.
+
+1. In Vercel, create one project from this GitHub repository, set the Framework Preset to **Services**, and keep Root Directory at `./`.
+2. Add a PostgreSQL provider through Vercel Marketplace. Neon supplies a pooled `DATABASE_URL` and a direct `DATABASE_URL_UNPOOLED` connection string. Make sure both variables are available to the backend build.
+3. In the Vercel project's **Settings → Environment Variables**, add `SECRET_KEY` with a private, randomly generated value; add `DEBUG` with the value `False`; and add the database variables from the provider. Select **Production** for each variable (and **Preview** too if deploying previews against a database).
+4. Save the variables, then create a new deployment. The backend build runs migrations using `DATABASE_URL_UNPOOLED` when available, then collects Django admin static files. A failed deployment created before the variables were added must be redeployed to pick up the new values.
+5. If using a custom domain, set `ALLOWED_HOSTS` to include that hostname and `CSRF_TRUSTED_ORIGINS` to include its `https://` origin. Vercel deployment hostnames are allowed automatically.
+
+The frontend uses same-domain relative `/api` requests, so no production API URL or cross-origin setup is needed. All devices must use this same Vercel deployment and hosted `DATABASE_URL` to share records.
 
 All devices must use the same Vercel deployment and the same hosted `DATABASE_URL`. Successful ORM writes increment a shared database revision; signed-in open screens check it every five seconds and refetch changed lists, profiles, dashboard values, and searches. This keeps independent users and devices in sync without a manual browser refresh. Keep the database and Vercel Function region close to one another to reduce query latency.
 
